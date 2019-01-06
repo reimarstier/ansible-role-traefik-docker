@@ -1,0 +1,18 @@
+---
+# defaults file for traefik-docker
+traefik_version: "latest"
+traefik_imagename: "traefik"
+traefik_image: "{{ traefik_imagename }}:{{ traefik_version }}"
+traefik_toml: "traefik.toml.roledefault"
+traefik_service_template: 'traefik.service.default'
+
+traefik_uid: 1000
+traefik_gid: 1000
+traefik_conf_dir: "/etc/traefik"
+traefik_exposed_ports:
+  - '80:80'
+#  - '8080:8080'
+  - '443:443'
+# traefik_network
+traefik_wait_port: 80
+traefik_wait_time: 30

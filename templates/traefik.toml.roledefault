@@ -1,0 +1,60 @@
+################################################################
+# Global configuration
+################################################################
+insecureSkipVerify = true
+
+defaultEntryPoints = ["http", "https"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+{% if traefik_tls_enabled %}
+    # http should be redirected to https
+    [entryPoints.http.redirect]
+    entryPoint = "https"
+  # https is the default
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+{% endif %}
+  [entryPoints.traefik]
+  address = ":8080"
+
+################################################################
+# API and dashboard configuration
+################################################################
+[api]
+entryPoint = "traefik"
+
+################################################################
+# Docker configuration backend
+################################################################
+[docker]
+{% if traefik_acme_main_domain is defined %}
+domain = "{{ traefik_acme_main_domain }}"
+{% endif %}
+
+watch = true
+exposedByDefault = true
+
+{% if traefik_acme_enabled is defined and traefik_acme_enabled %}
+[acme]
+email = "{{ traefik_acme_email }}"
+storage = "/etc/traefik/acme.json"
+entryPoint = "https"
+
+# Enable certificate generation on frontend Host rules (for frontends wired to the acme.entryPoint).
+onHostRule = false
+
+# problems with let's encrypt? You can use this staging environment,
+# if you have to do a lot of trial and error:
+#caServer = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+{% for domain in traefik_acme_domains %}
+[[acme.domains]]
+  main = "{{ domain }}"
+{% endfor %}
+
+[acme.httpChallenge]
+entryPoint = "http"
+{% endif %}

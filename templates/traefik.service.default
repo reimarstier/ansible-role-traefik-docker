@@ -1,0 +1,28 @@
+[Unit]
+Description=traefik
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill traefik
+ExecStartPre=-/usr/bin/docker rm traefik
+ExecStartPre=/usr/bin/docker pull {{ traefik_image }}
+{% if traefik_network is defined %}
+ExecStartPre=-/usr/bin/docker network create {{ traefik_network }}
+{% endif %}
+
+ExecStart=/usr/bin/docker run --name traefik \
+{% for ports in traefik_exposed_ports %}
+    -p {{ ports }} \
+{% endfor %}
+{% if traefik_network is defined %}
+    --network {{ traefik_network }} \
+    --hostname {{ traefik_hostname }} \
+{% endif %}
+    -v {{ traefik_conf_dir }}:/etc/traefik:rw \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    {{ traefik_image }}
+
+[Install]
+WantedBy=multi-user.target

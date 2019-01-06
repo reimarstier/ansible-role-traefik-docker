@@ -1,0 +1,40 @@
+---
+# tasks file for traefik-docker
+
+- name: "{{ traefik_conf_dir }} should exist"
+  file: 
+    path: "{{ traefik_conf_dir }}"
+    state: directory
+    owner: "{{ traefik_uid }}"
+    group: "{{ traefik_gid }}"
+
+- name: template config file
+  template:
+    src: '{{ traefik_toml }}'
+    dest: '{{ traefik_conf_dir }}/traefik.toml'
+  notify: restart traefik
+
+- name: template service file
+  template: 
+    src: "{{ traefik_service_template }}"
+    dest: "/etc/systemd/system/traefik.service"
+  register: service_file
+  notify: restart traefik
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  when: service_file is changed
+
+- name: pull image {{ traefik_image }}
+  shell: docker pull {{ traefik_image }}
+  changed_when: false
+  
+- name: trigger handler
+  meta: flush_handlers
+
+- name: service should be enabled and started
+  systemd:
+    name: traefik.service
+    enabled: true
+    state: started

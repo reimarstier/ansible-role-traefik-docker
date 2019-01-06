@@ -1,0 +1,27 @@
+---
+# handlers file for traefik-docker
+- name: restart traefik
+  systemd:
+    name: traefik.service
+    state: restarted
+
+- name: "get container ip of traefik"
+  shell: >
+    docker inspect
+    -f  {% raw %} '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' {% endraw %}
+    traefik
+  retries: 5
+  delay: 5
+  register: _traefik_ips
+  until: _traefik_ips.rc == 0 and _traefik_ips.stdout | length > 0
+  notify: "wait until traefik opens port"
+  when: traefik_wait_time | int > 0
+
+- name: "wait until traefik opens port"
+  wait_for:
+    host: '{{ _traefik_ips.stdout_lines | first }}'
+    port: '{{ traefik_wait_port }}'
+    state: started
+    delay: 5
+    timeout: '{{ traefik_wait_time | int }}'
+  when: traefik_wait_time | int > 0
